@@ -32,7 +32,7 @@ import com.tomtom.online.sdk.routing.RoutingApi;
 import com.tomtom.online.sdk.routing.data.FullRoute;
 import com.tomtom.online.sdk.routing.data.RouteQuery;
 import com.tomtom.online.sdk.routing.data.RouteQueryBuilder;
-import com.tomtom.online.sdk.routing.data.RouteResult;
+import com.tomtom.online.sdk.routing.data.RouteResponse;
 import com.tomtom.online.sdk.routing.data.RouteType;
 import com.tomtom.online.sdk.search.OnlineSearchApi;
 import com.tomtom.online.sdk.search.SearchApi;
@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void handleLongClick(@NonNull LatLng latLng) {
-        searchApi.reverseGeocoding(new ReverseGeocoderSearchQueryBuilder(latLng.getLatitude(), latLng.getLongitude()))
+        searchApi.reverseGeocoding(new ReverseGeocoderSearchQueryBuilder(latLng.getLatitude(), latLng.getLongitude()).build())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new DisposableSingleObserver<ReverseGeocoderSearchResponse>() {
@@ -256,7 +256,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 disableSearchButtons();
                 showDialogInProgress();
-                searchApi.alongRouteSearch(new AlongRouteSearchQueryBuilder(textToSearch, route.getCoordinates(), MAX_DETOUR_TIME).withLimit(QUERY_LIMIT))
+                searchApi.alongRouteSearch(new AlongRouteSearchQueryBuilder(textToSearch, route.getCoordinates(), MAX_DETOUR_TIME).withLimit(QUERY_LIMIT).build())
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(new DisposableSingleObserver<AlongRouteSearchResponse>() {
@@ -386,8 +386,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private RouteQuery createRouteQuery(LatLng start, LatLng stop, LatLng[] wayPoints) {
         return (wayPoints != null) ?
-                new RouteQueryBuilder(start, stop).withWayPoints(wayPoints).withRouteType(RouteType.FASTEST) :
-                new RouteQueryBuilder(start, stop).withRouteType(RouteType.FASTEST);
+                new RouteQueryBuilder(start, stop).withWayPoints(wayPoints).withRouteType(RouteType.FASTEST).build() :
+                new RouteQueryBuilder(start, stop).withRouteType(RouteType.FASTEST).build();
     }
 
     private void drawRoute(LatLng start, LatLng stop) {
@@ -401,12 +401,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         routingApi.planRoute(routeQuery)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new DisposableSingleObserver<RouteResult>() {
+                .subscribe(new DisposableSingleObserver<RouteResponse>() {
 
                     @Override
-                    public void onSuccess(RouteResult routeResult) {
+                    public void onSuccess(RouteResponse routeResponse) {
                         dismissDialogInProgress();
-                        displayRoutes(routeResult.getRoutes());
+                        displayRoutes(routeResponse.getRoutes());
                         tomtomMap.displayRoutesOverview();
                     }
 
