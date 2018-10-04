@@ -1,0 +1,111 @@
+apply plugin: 'org.asciidoctor.convert'
+
+asciidoctorj {
+    version = '1.5.5'
+}
+asciidoctor {
+    ext.capturedOutput = [ ]
+    def listener = { ext.capturedOutput << it } as StandardOutputListener
+
+    logging.addStandardErrorListener(listener)
+    logging.addStandardOutputListener(listener)
+
+    doLast {
+        logging.removeStandardOutputListener(listener)
+        logging.removeStandardErrorListener(listener)
+        ext.capturedOutput.join('').with { output ->
+            if (output =~ /not found/) {
+                throw new RuntimeException("Include file(s) not found.\n" + output)
+            }
+        }
+    }
+
+    backends 'html5', 'pdf'
+    attributes \
+        'build-gradle': file('build.gradle'),
+            'sourcedir': "src/../../",
+            'endpoint-url': 'http://developer.tomtom.com',
+            'source-highlighter': 'coderay',
+            'imagesdir': 'images/',
+            'icons': 'font',
+            'setanchors': '',
+            'idprefix': '',
+            'idseparator': '-',
+            'docinfo1': '',
+            'sdkversion': "$System.env.CURRENT_SDK_VERSION",
+            'sdknumber': "$System.env.NEXT_VER",
+            'sdk-tbt': false
+}
+
+ext.createExampleTree = { File currentDir ->
+    def examplesDir = file(currentDir.path+"/3Examples/")
+    def examplesDirImages = file(currentDir.path+"/3Examples/images/")
+    def sourceExample = file(currentDir.path+"/examples/")
+    if (!sourceExample.exists()){
+        return
+    }
+    examplesDir.mkdirs()
+    examplesDirImages.mkdirs()
+    def images = file(currentDir.path+"/images/")
+    GFileUtils.copyDirectory(images, examplesDirImages)
+    ext.copyMainFile(currentDir,"3Examples.html", "/3Examples/index.html")
+    GFileUtils.copyDirectory(sourceExample,examplesDir)
+    sourceExample.deleteDir()
+}
+
+ext.createDocumentationTree = { File currentDir ->
+    def examplesDir = file(currentDir.path+"/2Documentation/")
+    def examplesDirImages = file(currentDir.path+"/2Documentation/images/")
+    def sourceExample = file(currentDir.path+"/documentation/")
+    if (!sourceExample.exists()){
+        return
+    }
+    examplesDir.mkdirs()
+    examplesDirImages.mkdirs()
+    def images = file(currentDir.path+"/images/")
+    GFileUtils.copyDirectory(images, examplesDirImages)
+    ext.copyMainFile(currentDir,"2Documentation.html", "/2Documentation/index.html")
+    GFileUtils.copyDirectory(sourceExample,examplesDir)
+    sourceExample.deleteDir()
+}
+
+ext.createExtensionsTree = { File currentDir ->
+    def examplesDir = file(currentDir.path+"/4Extensions/")
+    def extDirImages = file(currentDir.path+"/4Extensions/images/")
+    def sourceExample = file(currentDir.path+"/extensions/")
+    if (!sourceExample.exists()){
+        return
+    }
+    examplesDir.mkdirs()
+    extDirImages.mkdirs()
+    def images = file(currentDir.path+"/images/")
+    GFileUtils.copyDirectory(images, extDirImages)
+    ext.copyMainFile(currentDir,"4Extensions.html", "/4Extensions/index.html")
+    GFileUtils.copyDirectory(sourceExample,examplesDir)
+    sourceExample.deleteDir()
+}
+
+ext.renameFile = { File src, File dest ->
+    println "src File " +  src.absolutePath
+    println "dest File " +  dest.absolutePath
+    src.renameTo(dest)
+}
+
+ext.copyMainFile = { File currentDir, String name, String newPath ->
+    def mainFile = file("${currentDir.path}/${name}");
+    def newFile = file("${currentDir.absolutePath + newPath}")
+    renameFile(mainFile, newFile)
+}
+
+
+task asciidoctorDrupal(  dependsOn: 'asciidoctor' ) {
+    doLast {
+        println "Prepare files to be upload into drupal"
+        def currentDir = file("build/asciidoc/html5/")
+        file("${currentDir.path}/product.html").delete()
+        project.createExampleTree(currentDir)
+        project.createDocumentationTree(currentDir)
+        project.createExtensionsTree(currentDir)
+        executeSwipeOneLine();
+    }
+}
