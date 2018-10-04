@@ -1,5 +1,10 @@
+plugins {
+    id 'org.asciidoctor.convert' version '1.5.3'
+}
+
 apply plugin: 'com.android.application'
 
+apply from: '../asciidoctorj.gradle'
 android {
     compileSdkVersion 27
     defaultConfig {
@@ -16,7 +21,7 @@ android {
         }
     }
 }
-
+//tag::doc_app_dependencies[]
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:27.1.1'
@@ -27,3 +32,4 @@ dependencies {
     implementation 'com.tomtom.online:sdk-search:2.282'
     implementation 'com.tomtom.online:sdk-maps-ui-extensions:2.282'
 }
+//end::doc_app_dependencies[]

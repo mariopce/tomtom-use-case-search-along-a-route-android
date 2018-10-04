@@ -1,0 +1,328 @@
+== Search along a route
+
+=== Overview
+
+This tutorial shows how to use TomTom Maps SDK for Android to create an application that helps a user
+find points of interest along a planned route.
+
+It shows how to use:
+
+- The TomTom Map SDK module to display a map, including markers with custom icons and balloons.
+- The TomTom Routing SDK module to plan routes with and without waypoints.
+- The TomTom Search SDK module to search for points of interest (POIs) and to geocode map positions.
+
+An end user can start interacting with the application by planning a route with departure and destination
+points. One long click on the map sets a departure point. A second long click sets a destination point
+and draws a route between those two points on the map.
+
+When the route is visible on the map, the user can type a POI name or category into a search field or
+click on any of the predefined POI category buttons (gas station, restaurant, ATM). The map displays
+markers for POIs that match the user's request. The user can add one of the displayed POIs to their planned
+route by clicking the marker on the map and choosing the "Add to my route" button inside the marker balloon
+that is then displayed. The route is recalculated and redrawn to include the selected point.
+
+image::0-example-app.png[width=300,align=center]
+
+=== Prerequisites:
+
+1. Create a new project (minimum `SDK API 23 – Android 6.0` “Marshmallow”) with an Empty Activity named `MainActivity`.
+Make sure that the Backwards Compatibility (AppCompat) option is enabled.
+
+2. In the `build.gradle` project file, add the TomTom repository to the list of repositories. The TomTom Maps SDK
+dependencies are downloaded from there.
++
+[source,groovy,indent=0]
+----
+include::../../../../build.gradle[tags=doc_add_tomtom_repo]
+----
+
+3. In the `app/build.gradle` file, add dependencies to the TomTom Map, Search and Routing SDK modules along with android
+support libraries.
++
+[source,groovy,indent=0]
+----
+include::../../../build.gradle[tags=doc_app_dependencies]
+----
+
+4. If you don't have an API key follow these steps:
++
+image::tutorial-get-your-key-step-2.png[]
+
+5. Copy and paste the API key into your `AndroidManifest.xml` inside the `<application>` tag:
++
+[source,xml,indent=0]
+----
+include::../../main/AndroidManifest.xml[tags=doc_service_keys]
+----
+
+6. Create a file named dimens.xml inside your res/values directory. Add the dimension values of you UI components to it.
++
+[source,xml,indent=0]
+----
+include::../../main/res/values/dimens.xml[tags=doc_new_dimens_value]
+----
+
+=== Map initialization
+
+To initialize a TomTom map, add a `com.tomtom.onlinesdk.map.MapFragment` fragment into the main `ConstraintLayout`
+section of the `activity_main.xml` file.
+
+[source,xml,indent=0]
+----
+include::../../main/res/layout/activity_main.xml[tags=map_fragment_map_part]
+----
+
+Run your application. You should see a map.
+
+image::1-displayMap.png[width=300,align=center]
+
+The TomTom map handles zooming, panning, rotating and double tapping gestures. In this application you need to add
+additional map interactions including location handling, long map click events, drawing routes and markers.
+
+You can start adding event handlers to the map only after it is fully initialized. To test if the map is ready,
+the MainActivity class should implement an `OnMapReadyCallback` interface.
+
+Then implement an `OnMapLongClickListener` interface to provide a callback method for long click events on the map.
+
+Add a `initTomTomServices` method to part of the `MainActivity` class where Maps API modules are initialized.
+At the same time, add a `initUIViews` method and a `setupUIViewListeners` method where User Interface (UI) elements
+are initialized.
+
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_init_methods]
+----
+
+Add a private field for the TomTom map object inside the MainActivity class:
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_tomtom_map]
+----
+
+and initialize it in the `onMapReady` callback.
+
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_on_map_ready]
+----
+
+Override the `onRequestPermissionsResult` method so that permission callbacks from activities are forwarded to the `tomtomMap` object.
+
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_on_request_permissions_result]
+----
+
+After the `onMapReady` callback is executed from the Maps SDK, the tomtomMap object is ready to be used.
+Now you can register your own map event listeners.
+
+=== Drawing a route on the map
+
+Drawing a route on the map requires that the following additional private fields be defined in the `MainActivity` class:
+
+- RoutingApi
+- SearchApi (here used for reverse geocoding of a map position to a valid address)
+- Calculated route
+- Departure coordinates
+- Destination coordinates
+- Waypoint coordinates
+
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_route_drawing_req]
+----
+
+Then initialize the TomTom Search and Routing services by adding the following to the initTomTomServices method:
+
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=tomtom_service_init]
+----
+
+Initialize icons for departure and destination positions inside the `initUIViews` method.
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=init_icons]
+----
+
+You need a `clearMap` function, where all the markers and the route are removed from the map.
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_clear_map]
+----
+
+Update the `res/values/strings.xml` file by adding strings:
+[source,xml,indent=0]
+----
+include::../../main/res/values/strings.xml[tags=doc_error_string_def]
+----
+
+Now you can add an implementation to the function that handles long click events on the map.
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_handle_long_click]
+----
+
+The `handleLongClick` function calls the searchApi's `reverseGeocoding` method. This method checks if a road
+can be found in the place where a long click is registered on the map.
+
+Method `reverseGeocoding` returns a RxJava `Single<ReverseGeocoderSearchResponse>` object, subscribe on this
+object with `DisposableSingleObserver<ReverseGeocoderSearchResponse>`. When the `Single` is finished, it emits
+either a single successful value or an error. If a successful value is emitted, a method `onSuccess` is executed
+in the subscribing `DisposableSingleObserver`, otherwise an `onError` method is executed.
+
+If the reverse geocoding call is successful, the effect of the LongClick depends on context:
+
+- The first long click on the map sets the `departurePosition` object.
+- A second long click sets the `destinationPosition` object and draws a route on the map.
+- A third long click removes any destination and departure markers and the route from the map.
+
+Next add functions to send a route request to the Routing API and to draw a route from the response on the map.
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_create_route_query]
+----
+
+The `createRouteQuery` method returns a `routeQuery` object:
+
+- With additional waypoints (if the wayPoints array is not equal to null).
+- Without additional waypoints (if the wayPoints array is equal to null).
+
+The `drawRouteWithWaypoints` method calls the Routing API. If the response is successful, a route is drawn on the map.
+If the API returns an error, a message is displayed on the screen.
+
+Add a `createMarkerIfNotPresent` method to display a departure position marker if the destination position is not set:
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_createMarkerIfNotPresent]
+----
+
+Now you can draw the route on the map by using long clicks in chosen locations.
+
+image::2-routing.gif[width=300,align=center]
+
+=== Searching for POIs along the route
+
+Add strings to `res/values/strings.xml`
+[source,xml,indent=0]
+----
+include::../../main/res/values/strings.xml[tags=doc_search_poi_strings]
+----
+
+Add dimensions to `res/values/dimens.xml`
+[source,xml,indent=0]
+----
+include::../../main/res/values/dimens.xml[tags=doc_search_poi_dimens]
+----
+
+Add colors to `res/values/colors.xml`
+[source,xml,indent=0]
+----
+include::../../main/res/values/colors.xml[tags=doc_search_colors]
+----
+
+Use the `searchApi` object that was created earlier to search for a POI to add to the existing route.
+Modify the `activity_main.xml` layout file by adding a search field and its button.
+
+[source,xml,indent=0]
+----
+include::../../main/res/layout/activity_main.xml[tags=doc_add_search_options]
+----
+
+Then add behaviors to the newly created controls. Add private fields for the search button and text field in the
+`MainActivity` class
+
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_btn_search_support]
+----
+
+After initializing the search button, add a listener inside the setupUIViewListeners method to receive events
+when the button is clicked.
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_support_search_listener]
+----
+
+Add a method to create a search button listener.
+
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_getSearchButtonListener]
+----
+
+The `getSearchButtonListener` method creates a `View.OnClickListener` object. The `searchAlongTheRoute` function
+in this object executes a search query for the provided search term along the displayed route. The
+`createAndDisplayCustomMarker` method then adds a map marker in the position returned by the search query,
+including the name and address of the POI.
+
+image::3-search-for-pois.png[width=300,align=center]
+
+=== Adding custom marker balloons
+
+Add a file with a rounded button shape named `bg_balloon_button.xml` to the `res/drawables` folder. This adds the
+styling to the buttons in the marker balloons.
+
+[source,xml,indent=0]
+----
+include::../../main/res/drawable/bg_balloon_button.xml[]
+----
+To create a custom layout, add a file named `marker_custom_balloon.xml` inside the `res/layout` directory.
+
+[source,xml,indent=0]
+----
+include::../../main/res/layout/marker_custom_balloon.xml[]
+----
+
+The marker_custom_balloon layout displays a balloon above a map marker that the user has clicked. This balloon
+has two text fields to display an address and a POI name are displayed, plus a button to add the POI to the existing
+route.
+
+Finally, add a method `createCustomViewAdapter` that returns a custom `SingleLayoutBalloonViewAdapter` adapter object.
+
+Use the `marker_custom_balloon` layout as an argument for the adapter object. Then override the `onBindView` method
+inside the adapter to fill in the marker balloon layout fields. Then implement a `btnAddWayPoint` onClick event
+inside the adapter. This events executes a setWayPoint method and recalculates the route to include the marker
+that the user has clicked.
+
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_createCustomViewAdapter]
+----
+
+Use above method inside the `onMapReady` function to set a marker balloon view adapter.
+[source,java,indent=0]
+----
+include::../../main/java/com/tomtom/online/sdk/searchalongaroute/MainActivity.java[tags=doc_set_custom_balloon_view_adapter]
+----
+
+image::4-add-poi-to-route.png[width=300,align=center]
+
+Now you should have a fully working application where you can:
+
+- Display a map.
+- Create a route between 2 points.
+- Display points of interest.
+- Add a single POI to your route.
+
+The additional styling, shortcut buttons, and help screen in the application screenshots are not a part of this tutorial.
+You can find them, along with all the icons and images used in this tutorial, in the application posted on https://github.com/tomtom-international/tomtom-use-case-search-along-a-route-android[github].
+
+=== Summary
+
+This tutorial explained how to create a sample application that searches for and displays points of interest along a route,
+then replans the route to include one of those POIs.
+
+This application can be extended with other TomTom Maps SDK functions, such as displaying information about
+traffic and travel distances.
+
+_Happy coding!_
+
+=== Example application
+
+The full application, including additional layout changes and improvements, is visible below. It uses a `ConstraintLayout`
+with a search field and a button for its main layout. At the bottom of the screen there are also three optional buttons
+that can be used for quick searches for gas stations, restaurants, and ATMs. There is a help button in the top right corner
+along with a clear button to remove the route and any markers from the map.
+
+image::5-full-low.gif[width=300,align=center]

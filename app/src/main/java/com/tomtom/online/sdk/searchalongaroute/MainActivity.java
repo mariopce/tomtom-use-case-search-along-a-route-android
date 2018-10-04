@@ -47,27 +47,9 @@ import java.util.List;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
-
+//tag::doc_init_methods[]
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
         TomtomMapCallback.OnMapLongClickListener {
-
-    private TomtomMap tomtomMap;
-    private SearchApi searchApi;
-    private RoutingApi routingApi;
-    private Route route;
-    private LatLng departurePosition;
-    private LatLng destinationPosition;
-    private LatLng wayPointPosition;
-    private Icon departureIcon;
-    private Icon destinationIcon;
-    private Button btnHelp;
-    private ImageButton btnClear;
-    private ImageButton btnGasStation;
-    private ImageButton btnRestaurant;
-    private ImageButton btnAtm;
-    private ImageButton btnSearch;
-    private EditText editTextPois;
-    private Dialog dialogInProgress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,18 +58,51 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         initTomTomServices();
         initUIViews();
         setupUIViewListeners();
+        //end::doc_init_methods[]
         disableSearchButtons();
     }
 
+    //tag::doc_tomtom_map[]
+    private TomtomMap tomtomMap;
+    //end::doc_tomtom_map[]
+    //tag::doc_route_drawing_req[]
+    private SearchApi searchApi;
+    private RoutingApi routingApi;
+    private Route route;
+    private LatLng departurePosition;
+    private LatLng destinationPosition;
+    private LatLng wayPointPosition;
+    private Icon departureIcon;
+    private Icon destinationIcon;
+    //end::doc_route_drawing_req[]
+
+    private Button btnHelp;
+    private ImageButton btnClear;
+    private ImageButton btnGasStation;
+    private ImageButton btnRestaurant;
+    private ImageButton btnAtm;
+    //tag::doc_btn_search_support[]
+    private ImageButton btnSearch;
+    private EditText editTextPois;
+    //end::doc_btn_search_support[]
+    private Dialog dialogInProgress;
+
+
+
     @Override
+    //tag::doc_on_map_ready[]
     public void onMapReady(@NonNull final TomtomMap tomtomMap) {
         this.tomtomMap = tomtomMap;
         this.tomtomMap.setMyLocationEnabled(true);
         this.tomtomMap.addOnMapLongClickListener(this);
         this.tomtomMap.getMarkerSettings().setMarkersClustering(true);
+        //end::doc_on_map_ready[]
+        //tag::doc_set_custom_balloon_view_adapter[]
         this.tomtomMap.getMarkerSettings().setMarkerBalloonViewAdapter(createCustomViewAdapter()) ;
+        //end::doc_set_custom_balloon_view_adapter[]
     }
 
+    //tag::doc_handle_long_click[]
     @Override
     public void onMapLongClick(@NonNull LatLng latLng) {
         if (isDeparturePositionSet() && isDestinationPositionSet()) {
@@ -96,21 +111,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             showDialogInProgress();
             handleLongClick(latLng);
         }
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (!isMapCleared()) {
-            clearMap();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    private boolean isMapCleared() {
-        return departurePosition == null
-                && destinationPosition == null
-                && route == null;
     }
 
     private void handleLongClick(@NonNull LatLng latLng) {
@@ -155,23 +155,47 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                 });
     }
+    //end::doc_handle_long_click[]
 
+    @Override
+    public void onBackPressed() {
+        if (!isMapCleared()) {
+            clearMap();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    private boolean isMapCleared() {
+        return departurePosition == null
+                && destinationPosition == null
+                && route == null;
+    }
+
+
+
+    //tag::doc_on_request_permissions_result[]
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         this.tomtomMap.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
+    //end::doc_on_request_permissions_result[]
 
     private void initTomTomServices() {
         MapFragment mapFragment = (MapFragment) getSupportFragmentManager().findFragmentById(R.id.mapFragment);
         mapFragment.getAsyncMap(this);
+        //tag::tomtom_service_init[]
         searchApi = OnlineSearchApi.create(this);
         routingApi = OnlineRoutingApi.create(this);
+        //end::tomtom_service_init[]
     }
 
     private void initUIViews() {
+        //tag::init_icons[]
         departureIcon = Icon.Factory.fromResources(MainActivity.this, R.drawable.ic_map_route_departure);
         destinationIcon = Icon.Factory.fromResources(MainActivity.this, R.drawable.ic_map_route_destination);
+        //end::init_icons[]
         editTextPois = findViewById(R.id.edittext_main_poisearch);
         btnAtm = findViewById(R.id.btn_main_atm);
         btnHelp = findViewById(R.id.btn_main_help);
@@ -185,9 +209,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void setupUIViewListeners() {
+        //tag::doc_support_search_listener[]
         View.OnClickListener searchButtonListener = getSearchButtonListener();
-
         btnSearch.setOnClickListener(searchButtonListener);
+        //end::doc_support_search_listener[]
+
         btnGasStation.setOnClickListener(searchButtonListener);
         btnRestaurant.setOnClickListener(searchButtonListener);
         btnAtm.setOnClickListener(searchButtonListener);
@@ -214,6 +240,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
+    //tag::doc_getSearchButtonListener[]
     @NonNull
     private View.OnClickListener getSearchButtonListener() {
         return new View.OnClickListener() {
@@ -301,6 +328,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         };
     }
+    //end::doc_getSearchButtonListener[]
 
     private void disableSearchButtons() {
         btnSearch.setEnabled(false);
@@ -336,6 +364,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    //tag::doc_createCustomViewAdapter[]
     private SingleLayoutBalloonViewAdapter createCustomViewAdapter() {
         return new SingleLayoutBalloonViewAdapter(R.layout.marker_custom_balloon) {
             @Override
@@ -361,7 +390,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         };
     }
+    //end::doc_createCustomViewAdapter[]
 
+    //tag::doc_createMarkerIfNotPresent[]
     private void createMarkerIfNotPresent(LatLng position, Icon icon) {
         Optional<Marker> optionalMarker = tomtomMap.findMarkerByPosition(position);
         if (!optionalMarker.isPresent()) {
@@ -369,12 +400,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .icon(icon));
         }
     }
-
+    //end::doc_createMarkerIfNotPresent[]
+    //tag::doc_clear_map[]
     private void clearMap() {
         tomtomMap.clear();
         departurePosition = null;
         destinationPosition = null;
         route = null;
+        //end::doc_clear_map[]
         disableSearchButtons();
         editTextPois.getText().clear();
     }
@@ -383,7 +416,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         dismissDialogInProgress();
         Toast.makeText(MainActivity.this, getString(R.string.api_response_error, e.getLocalizedMessage()), Toast.LENGTH_LONG).show();
     }
-
+    //tag::doc_create_route_query[]
     private RouteQuery createRouteQuery(LatLng start, LatLng stop, LatLng[] wayPoints) {
         return (wayPoints != null) ?
                 new RouteQueryBuilder(start, stop).withWayPoints(wayPoints).withRouteType(RouteType.FASTEST).build() :
@@ -424,7 +457,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                 });
     }
-
+    //end::doc_create_route_query[]
     private boolean isDestinationPositionSet() {
         return destinationPosition != null;
     }
