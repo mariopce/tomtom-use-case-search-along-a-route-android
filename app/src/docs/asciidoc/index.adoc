@@ -46,7 +46,19 @@ include::../../../build.gradle[tags=doc_app_dependencies]
 
 4. If you don't have an API key follow these steps:
 +
+To create a new API key, first log in or https://developer.tomtom.com/user/register[register] on the portal.
++
+Next, create a new application in your https://developer.tomtom.com/user/me/apps[Dashboard]:
++
+image::tutorial-get-your-key-step-1.png[]
+Choose all the APIs:
++
 image::tutorial-get-your-key-step-2.png[]
++
+You are now set up. Click on your newly created app and copy your API key:
++
+image::tutorial-get-your-key-step-3.png[]
+
 
 5. Copy and paste the API key into your `AndroidManifest.xml` inside the `<application>` tag:
 +
